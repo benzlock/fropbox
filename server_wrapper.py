@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import urllib.parse
-
 import requests
 
 class Server:

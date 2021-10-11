@@ -2,8 +2,8 @@
 
 import logging
 import os
-import sys
 import pathlib
+import sys
 
 import flask
 

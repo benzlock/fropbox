@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-# https://helloacm.com/algorithm-to-remove-a-interval-from-segments/
-
 class FileSegment:
     """
     A FileSegment object represents a file as a list of bytes. This is done using an
@@ -24,6 +22,7 @@ class FileSegment:
 
     def remove(self, start, stop):
         "remove some segment R (start, stop) from the list of segments"
+        # https://helloacm.com/algorithm-to-remove-a-interval-from-segments/
 
         new_segments = []
         for seg_start, seg_stop in self.segments:

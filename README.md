@@ -4,28 +4,28 @@
 
 Build an application, consisting of two separate components, to synchronise a _destination_ folder from a _source_ folder over IP:
 
-*1.1*: A simple command line client which takes one directory (the source) as argument, keeps monitoring changes in that directory, and uploads any change to its server
-
-*1.2*: A simple server which takes one directory (the destination) as argument and receives any change from its client
-
-*Bonus 1*: Optimise data transfer by avoiding uploading the same file multiple times.
-
-*Bonus 2*: Optimise data transfer by avoiding uploading the same partial files (files sharing partially the same content) multiple times.
+**1.1**: A simple command line client which takes one directory (the source) as argument, keeps monitoring changes in that directory, and uploads any change to its server
+*
+**1.2**: A simple server which takes one directory (the destination) as argument and receives any change from its client
+*
+**Bonus 1**: Optimise data transfer by avoiding uploading the same file multiple times.
+*
+**Bonus 2**: Optimise data transfer by avoiding uploading the same partial files (files sharing partially the same content) multiple times.
 
 ## Design
 
-Most of the design of this application is informed by the requirements of Bonus 2. A natural approach to this would be to break each file into fixed-size chunks and instruct the server to copy any chunks that have already been uploaded. However, this will not catch any repeated sections that are smaller than one chunk, and repeated sections that do not line up to chunk boundaries will be ignored entirely.
+Most of the design of this application is informed by the requirements of Bonus 2. A natural approach to this would be to break each file into fixed-size chunks and instruct the server to copy any chunks that have already been uploaded. However, this will not catch any repeated sections that are smaller than one chunk, and repeated sections that are not aligned to chunk boundaries in the same way will be ignored entirely.
 
 ```
 file 1 ..... XXXXX XXX..
 file 2 ....Y YYYYY Y....
-file 3 ...YY YYYYY .....
+file 3 ..YYY YYYY. .....
 file 4 ..... ..ZZZ ..ZZZ
 ```
 
 The example above shows four files, each 15 bytes long, broken into 5-byte chunks. The dots represent random non-repeated data, and the letters represent sequences of repeated data.
  * In file 1, the repeated section in the last chunk will not be caught because the chunk also contains some bytes of non-repeated data.
- * Files 2 and 3 share a 7-byte sequence but this will not be caught because the sequences are offset differently relative to the chunk boundaries, so the two files do not actually contain any duplicate chunks.
+ * Files 2 and 3 share a 7-byte sequence but this will not be caught because the sequences are offset differently relative to the chunk boundaries (i.e. chunk start + 4 bytes in file 2 and chunk start + 2 bytes in file 3), so the two files do not actually contain any duplicate chunks.
 
 Instead, we search for repeated sections at any point within the file. This can be done using Python's built-in [`difflib.SequenceMatcher.get_matching_blocks`](https://docs.python.org/3/library/difflib.html?highlight=difflib#difflib.SequenceMatcher.get_matching_blocks), which returns lists of non-overlapping matching subsequences taken from its inputs. When uploading some file F, `get_matching_blocks` is called once for every file that has already been uploaded, to find common sequences between the uploaded file and F.
 
@@ -61,7 +61,7 @@ Communication with the server is handled by [Requests](https://docs.python-reque
 
 ## Usage
 
-To ensure that it works on all platforms, this project was designed to be used with Docker. The project can be built and start by running
+To ensure that it works on all platforms, this project was designed to be used with Docker. The project can be built and started by running
 
 ```
 $ docker build . -t fropbox ; docker run fropbox
@@ -73,11 +73,13 @@ The test suite can be run as follows:
 $ python3 -m unittest
 ```
 
-## Extensions
+## Further work
 
 There are a number of issues with this implementation of Fropbox, as well as features that could be added in the future.
 
 ### Issues
+
+Below is a partial list of known issues with Fropbox.
 
  * Many corner and edge cases are not handled, including but not limited to file names that are not URL-safe and copying from files with a negative start index or length.
  * The project currently has no security measures, so it would possible for an untrusted third party write junk data to the server. This could be fixed by requiring users to authentica themselves with a key for each file transfer.
@@ -94,3 +96,7 @@ Below are some proposals for features that could be added to improve Fropbox.
  * As mentioned above, the algorithm used by `get_matching_blocks` does not identify the most optimial (i.e. longest) repeated subsequences, nor does it identify subsequences repeated in one file. The latter problem could be solved by using an algorithm based on [suffix trees](https://stackoverflow.com/questions/37499968).
  * Similar to the previous feature, Fropbox's bandwidth could be reduced by compressing data before transmitting it.
  * Allow multiple file uploads at the same time. No part of the code prevents this from happening, but it has not been tested.
+
+## Time taken
+
+This project took approximately 4–5 hours of programming, 2–3 hours to write tests, and some more time spent on design and documentation.
